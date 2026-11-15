@@ -25,7 +25,7 @@ async function request(url,method,body,key){
  }finally{clearTimeout(timer);if(controller===active)controller=null}
 }
 function chunksFrom(html){
- const doc=new DOMParser().parseFromString(html,'text/html');doc.querySelectorAll('script,style,.next,.faq-tutor').forEach(n=>n.remove());
+ const doc=new DOMParser().parseFromString(html,'text/html');doc.querySelectorAll('script,style,.next,.course-tutor').forEach(n=>n.remove());
  return [...doc.querySelectorAll('section.chapter[id^="chapter-"],#glossary,#sources,#welcome')].map(section=>{
   const match=section.id.match(/^chapter-(\d+)$/),number=match?Number(match[1]):0,prefix=number?'c'+number:'r'+section.id,title=normalize(section.querySelector('h2,h3')?.textContent||'');const chunks=[];let block='',index=0;
   for(const node of section.querySelectorAll('h3,h4,p,pre,dt,dd,summary,li')){
