@@ -24,6 +24,21 @@ const DELETE_TEXT={
  it:{deleteUser:'Elimina utente',confirmDelete:'L’account e i suoi progressi verranno eliminati definitivamente. Questa azione è irreversibile. Per confermare, inserisci l’email dell’utente:',deleteMismatch:'L’email non corrisponde. L’utente non è stato eliminato.',userDeleted:'Utente e progressi eliminati.'}
 };
 for(const code of Object.keys(TEXT))Object.assign(TEXT[code],DELETE_TEXT[code]);
+const ACCESS_TEXT={
+ es:{lastSignIn:'Último inicio de sesión',neverSignedIn:'Nunca',accessUnavailable:'No disponible',accessNote:'Fecha del último inicio de sesión correcto. Las horas se muestran en la zona horaria de tu navegador.'},
+ en:{lastSignIn:'Last sign-in',neverSignedIn:'Never',accessUnavailable:'Unavailable',accessNote:'Date of the last successful sign-in. Times are shown in your browser’s time zone.'},
+ fr:{lastSignIn:'Dernière connexion',neverSignedIn:'Jamais',accessUnavailable:'Indisponible',accessNote:'Date de la dernière connexion réussie. Les heures sont affichées dans le fuseau horaire de votre navigateur.'},
+ it:{lastSignIn:'Ultimo accesso',neverSignedIn:'Mai',accessUnavailable:'Non disponibile',accessNote:'Data dell’ultimo accesso riuscito. Gli orari sono mostrati nel fuso orario del browser.'}
+};
+for(const code of Object.keys(TEXT))Object.assign(TEXT[code],ACCESS_TEXT[code]);
+function lastSignIn(value){
+ const detail=document.createElement('small');detail.className='user-last-access';
+ const label=document.createElement('span');label.textContent=t('lastSignIn');detail.append(label);
+ if(value==null){detail.append(document.createTextNode(t('neverSignedIn')));return detail}
+ const date=new Date(value);
+ if(!Number.isFinite(date.getTime())){detail.append(document.createTextNode(t('accessUnavailable')));return detail}
+ const time=document.createElement('time');time.dateTime=date.toISOString();time.textContent=new Intl.DateTimeFormat(language,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23',timeZoneName:'short'}).format(date);time.title=Intl.DateTimeFormat().resolvedOptions().timeZone;detail.append(time);return detail;
+}
 const supported=Object.keys(TEXT);let language='en',theme='light',session=null,access=null,selectedRole=null,lastChapter=1,loading=false,epoch=0,refreshing=null;
 const frame=$('course-frame');
 // Read the bearer link once into memory, then remove it from the URL/history.
@@ -65,7 +80,7 @@ function emailNotice(value){const statuses={accepted:'emailAccepted',failed:'ema
 function showCredentials(value,email=''){if(value.temporary_password){$('admin-credentials').textContent=(value.email||email)+'\n'+value.temporary_password;$('admin-result').hidden=false}}
 async function loadUsers(){
  const result=await adminApi({action:'list'});$('admin-delivery').options[0].disabled=!result.email_enabled;if(!result.email_enabled)$('admin-delivery').value='create';const container=$('user-list');container.replaceChildren();
- for(const user of result.users){const row=document.createElement('div');row.className='user-row';const name=document.createElement('strong');name.textContent=user.email;row.append(name);
+ for(const user of result.users){const row=document.createElement('div');row.className='user-row';const name=document.createElement('strong');name.textContent=user.email;const identity=document.createElement('div');identity.className='user-identity';identity.append(name,lastSignIn(user.last_sign_in_at));row.append(identity);
   const state=document.createElement('span');state.textContent=user.is_admin?t('adminLabel'):t(user.enabled?'enabled':'inactive');row.append(state);
   if(!user.is_admin){const role=document.createElement('select');populateRoles(role,user.course_role);role.setAttribute('aria-label',t('assigned'));const lang=document.createElement('select');for(const code of supported)lang.add(new Option({es:'Español',en:'English',fr:'Français',it:'Italiano'}[code],code));lang.value=user.language;lang.setAttribute('aria-label',t('language'));row.append(role,lang);
    for(const [action,label] of [['assign','apply'],['disable','disable'],['send-access','sendAccess'],['reset','reset'],['delete','deleteUser']]){const button=document.createElement('button');button.textContent=t(label);button.dataset.action=action;if(action==='delete')button.className='danger-action';if(action==='send-access')button.disabled=!user.enabled||!result.email_enabled;button.addEventListener('click',()=>{let confirmationEmail;if(action==='delete'){confirmationEmail=prompt(t('confirmDelete')+'\n'+user.email);if(confirmationEmail===null)return;if(confirmationEmail.trim().toLowerCase()!==user.email.toLowerCase()){notice('deleteMismatch',true);return}}if(action==='reset'&&!confirm(t('confirmReset'))||action==='disable'&&!confirm(t('confirmDisable')))return;busy(async()=>{clearCredentials();const value=await adminApi({action,user_id:user.user_id,course_role:role.value,language:lang.value,...(action==='delete'?{confirmation_email:confirmationEmail}:{})});await loadUsers();showCredentials(value,user.email);if(action==='delete')notice('userDeleted');else emailNotice(value)})});row.append(button);}

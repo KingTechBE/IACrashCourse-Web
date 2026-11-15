@@ -16,3 +16,6 @@ body.admin-view #portal{max-width:none;width:100%;padding-inline:clamp(12px,2vw,
 @media(max-width:1149px){.user-row select{flex:1 1 180px;min-width:0}.user-row button{font-size:.88rem}}
 
 .auth-card form>*{min-width:0;max-width:100%}
+
+.user-identity{min-width:0;overflow-wrap:anywhere;flex-basis:100%}.user-identity strong{display:block}.user-last-access{display:block;color:var(--muted);font-size:.78rem;line-height:1.5;margin-top:5px}.user-last-access>span{display:block}
+@media(min-width:1150px){.user-identity{flex-basis:auto}}
