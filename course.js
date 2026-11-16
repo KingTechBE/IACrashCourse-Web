@@ -46,11 +46,17 @@ if('IntersectionObserver' in window){let observer=new IntersectionObserver(entri
   serial++;if(synth)synth.cancel();if(!current)return;
   const item=current.item;current=null;item.querySelector('.audio-open').setAttribute('aria-expanded','false');item.querySelector('.audio-panel').hidden=true;status(item,key);setButtons(item,false);
  }
- function voiceFor(lang){const voices=synth.getVoices(),matches=voices.filter(v=>v.lang.toLowerCase().split('-')[0]===lang);return matches.find(v=>v.localService)||matches[0]||null}
+ function refreshVoices(item){
+  if(!synth)return;const select=item.querySelector('.audio-voice'),chosen=select.value,lang=document.documentElement.lang.toLowerCase().split('-')[0];
+  const voices=synth.getVoices().filter(v=>v.lang.toLowerCase().split('-')[0]===lang);select.replaceChildren(select.options[0]);
+  for(const voice of voices){const option=document.createElement('option');option.value=voice.voiceURI||voice.name;option.textContent=voice.name+' ('+voice.lang+' · '+(voice.localService?item.dataset.local:item.dataset.remote)+')';select.append(option)}
+  if([...select.options].some(option=>option.value===chosen))select.value=chosen;
+ }
+ function voiceFor(lang,item){const matches=synth.getVoices().filter(v=>v.lang.toLowerCase().split('-')[0]===lang),chosen=item.querySelector('.audio-voice').value;return matches.find(v=>(v.voiceURI||v.name)===chosen)||matches.find(v=>v.localService)||matches[0]||null} 
  function speakNext(id){
   if(!current||id!==serial)return;const state=current;
   if(state.index>=state.parts.length){status(state.item,'finished');state.item.querySelector('.audio-open').setAttribute('aria-expanded','false');state.item.querySelector('.audio-panel').hidden=true;current=null;return}
-  let utterance;try{utterance=new U(state.parts[state.index]);utterance.lang=document.documentElement.lang;const voice=voiceFor(utterance.lang.toLowerCase().split('-')[0]);if(voice)utterance.voice=voice;utterance.rate=Number(state.item.querySelector('.audio-speed').value);state.utterance=utterance;
+  let utterance;try{utterance=new U(state.parts[state.index]);utterance.lang=document.documentElement.lang;const voice=voiceFor(utterance.lang.toLowerCase().split('-')[0],state.item);if(voice)utterance.voice=voice;utterance.rate=Number(state.item.querySelector('.audio-speed').value);state.utterance=utterance;
    utterance.onend=()=>{if(current===state&&id===serial){state.index++;speakNext(id)}};
    utterance.onerror=()=>{if(current===state&&id===serial){status(state.item,'error');state.item.querySelector('.audio-pause').hidden=true;state.item.querySelector('.audio-resume').hidden=true;current=null}};
    synth.speak(utterance);status(state.item,'playing');
@@ -61,7 +67,7 @@ if('IntersectionObserver' in window){let observer=new IntersectionObserver(entri
   open.addEventListener('click',()=>{
    if(current?.item===item){stop();return}
    if(!panel.hidden&&!current){panel.hidden=true;open.setAttribute('aria-expanded','false');return}
-   stop();panel.hidden=false;open.setAttribute('aria-expanded','true');setButtons(item,false);
+   stop();refreshVoices(item);panel.hidden=false;open.setAttribute('aria-expanded','true');setButtons(item,false);
    if(!synth||!U){status(item,'unavailable');item.querySelector('.audio-pause').hidden=true;item.querySelector('.audio-resume').hidden=true;return}
    const parts=chunks(spokenText(item.closest('section.chapter')));if(!parts.length){status(item,'empty');return}
    current={item,parts,index:0};status(item,'ready');speakNext(serial);
@@ -70,6 +76,7 @@ if('IntersectionObserver' in window){let observer=new IntersectionObserver(entri
   item.querySelector('.audio-resume').addEventListener('click',()=>{if(current?.item!==item)return;synth.resume();setButtons(item,false);status(item,'playing')});
   item.querySelector('.audio-stop').addEventListener('click',()=>stop());
  }
+ if(synth?.addEventListener)synth.addEventListener('voiceschanged',()=>document.querySelectorAll('.chapter-audio').forEach(refreshVoices));
  window.addEventListener('hashchange',()=>{if(current&&/^#chapter-\d+$/.test(location.hash)&&location.hash!=='#'+current.item.closest('section.chapter').id)stop()});
  window.addEventListener('pagehide',()=>stop());
 })();
