@@ -18,3 +18,6 @@ if('IntersectionObserver' in window){let observer=new IntersectionObserver(entri
 
 // Zoom the same image without duplicating the embedded private asset.
 document.addEventListener('click',event=>{const button=event.target.closest('.llm-image-toggle');if(!button)return;const figure=button.closest('.llm-illustration');const expanded=figure.classList.toggle('is-zoomed');button.setAttribute('aria-pressed',String(expanded));button.textContent=expanded?button.dataset.fit:button.dataset.zoom;if(expanded)figure.querySelector('.llm-image-scroll').focus({preventScroll:true});});
+
+// Match the manually selected course theme, including appearance messages from the portal.
+(()=>{const root=document.documentElement;function illustrations(){for(const img of document.querySelectorAll('img[data-dark-src]')){const src=root.dataset.theme==='dark'?img.dataset.darkSrc:img.dataset.lightSrc;if(img.getAttribute('src')!==src)img.setAttribute('src',src)}}illustrations();new MutationObserver(illustrations).observe(root,{attributes:true,attributeFilter:['data-theme']});})();
