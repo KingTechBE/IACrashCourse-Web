@@ -15,3 +15,6 @@ const inputs=['volume','minutes','hour','cost'].map(id=>document.getElementById(
 document.addEventListener('click',e=>{const tutor=e.target.closest('.course-tutor');if(tutor&&parent!==window){const chapter=Number(tutor.closest('section.chapter').id.split('-')[1]);parent.postMessage({type:'tutor',chapter},'*');return}const link=e.target.closest('.activity-code-links a');if(!link)return;const target=document.getElementById(link.hash.slice(1));if(target?.matches('details.practical-extra'))target.open=true});
 if('IntersectionObserver' in window){let observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){document.querySelectorAll('.sidebar a').forEach(a=>a.classList.toggle('active',a.hash==='#'+entry.target.id));}})},{rootMargin:'-10% 0px -65% 0px'});document.querySelectorAll('section.chapter').forEach(s=>observer.observe(s));}
 })();
+
+// Zoom the same image without duplicating the embedded private asset.
+document.addEventListener('click',event=>{const button=event.target.closest('.llm-image-toggle');if(!button)return;const figure=button.closest('.llm-illustration');const expanded=figure.classList.toggle('is-zoomed');button.setAttribute('aria-pressed',String(expanded));button.textContent=expanded?button.dataset.fit:button.dataset.zoom;if(expanded)figure.querySelector('.llm-image-scroll').focus({preventScroll:true});});
